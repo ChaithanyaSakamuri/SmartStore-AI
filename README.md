@@ -228,56 +228,6 @@ cd server
 npm start
 ```
 
-## 🏗️ System Architecture
-
-The following diagram illustrates the high-fidelity, dual-role full-stack system architecture of SmartStore AI:
-
-```mermaid
-graph TD
-    %% User Roles & Client App
-    subgraph Client [React Frontend / client]
-        Customer[🛒 Customer Session]
-        Admin[👤 Admin Dashboard]
-        Cart[🛍️ Shopping Cart / CartContext]
-        Chatbot[🧠 Gemini AI Chatbot / AIChatBot]
-    end
-
-    %% Web Services & Endpoints
-    subgraph Express [Express Server / server]
-        AuthRouter[/api/auth]
-        ProductRouter[/api/products]
-        DashboardRouter[/api/dashboard]
-        AIRouter[/api/ai]
-        AuthMiddleware[🔐 Auth Middleware]
-    end
-
-    %% Storage & AI Engines
-    subgraph Data [Data & AI Engine]
-        MongoDB[(🍃 Local MongoDB Failover)]
-        Atlas[(☁️ MongoDB Atlas Master)]
-        GeminiAPI[✨ Google Gemini AI API]
-    end
-
-    %% Connections - Customer Roles
-    Customer -->|Manages Cart| Cart
-    Cart -->|Quick Buy / Checkout| ProductRouter
-    Customer -->|Interacts| Chatbot
-    
-    %% Connections - Admin Roles
-    Admin -->|Fulfillment Status Update| DashboardRouter
-
-    %% Routers to Auth Middleware & Engines
-    AuthRouter --> AuthMiddleware
-    ProductRouter --> AuthMiddleware
-    DashboardRouter --> AuthMiddleware
-    AIRouter --> AuthMiddleware
-    
-    %% Storage Connectors
-    AuthMiddleware -->|Persists & Validates| MongoDB
-    AuthMiddleware -->|Primary Target| Atlas
-    AIRouter -->|Live Catalog Context & Prompts| GeminiAPI
-```
-
 ---
 
 ## 📊 Database Models & Schema Table
