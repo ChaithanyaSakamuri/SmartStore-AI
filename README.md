@@ -2,6 +2,21 @@
 
 A full-stack web application featuring a React frontend with Tailwind CSS and a Node.js/Express backend with MongoDB integration. Includes AI-powered insights, real-time analytics, and comprehensive product management.
 
+## 📸 Screenshots
+
+### Authentication
+| Sign In | Create Account |
+|:---:|:---:|
+| ![Sign In](screenshots/signin.png) | ![Create Account](screenshots/signup.png) |
+
+### Customer Experience
+| Storefront Catalog | Shopping Cart |
+|:---:|:---:|
+| ![Shop Catalog](screenshots/shop.png) | ![Cart Drawer](screenshots/cart.png) |
+
+### User Dashboard
+![Dashboard](screenshots/dashboard.png)
+
 ## 🚀 Features
 
 ### Frontend
