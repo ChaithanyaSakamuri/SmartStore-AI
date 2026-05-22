@@ -73,8 +73,9 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
   // PayPal & SmartPay (UPI) details states
   const [paypalEmail, setPaypalEmail] = useState('');
   const [upiId, setUpiId] = useState('');
-  const [paypalOption, setPaypalOption] = useState('PayPal Wallet'); // 'PayPal Wallet', 'Credit/Debit Card', 'UPI / Smart Pay'
+  const [paypalOption, setPaypalOption] = useState('PayPal Wallet');
   const [finalPaymentMethod, setFinalPaymentMethod] = useState('Credit Card');
+  const [copiedOrderId, setCopiedOrderId] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -100,7 +101,8 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
 
   if (!isOpen) return null;
   if (!isCartCheckout && !product) return null;
-  if (isCartCheckout && cartItems.length === 0) return null;
+  // Allow success popup even when cart is empty (cart was cleared after purchase)
+  if (isCartCheckout && cartItems.length === 0 && !purchaseSuccess) return null;
 
   const handleIncrement = () => {
     if (product && quantity < product.stock) {
@@ -282,20 +284,19 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
     }
   };
 
-  const subtotal = isCartCheckout ? cartTotal : quantity * product.price;
-  const discountAmount = isCartCheckout ? cartDiscountTotal : subtotal * ((product.discount || 0) / 100);
+  const subtotal = isCartCheckout ? cartTotal : (product ? quantity * product.price : 0);
+  const discountAmount = isCartCheckout ? cartDiscountTotal : subtotal * ((product?.discount || 0) / 100);
   const finalTotal = isCartCheckout ? cartFinalTotal : subtotal - discountAmount;
 
-  const [copiedOrderId, setCopiedOrderId] = useState(false);
-
   const handleCopyOrderId = (orderId) => {
+    if (!orderId) return;
     navigator.clipboard.writeText(orderId).then(() => {
       setCopiedOrderId(true);
       setTimeout(() => setCopiedOrderId(false), 2000);
     });
   };
 
-  const displayOrderId = isCartCheckout ? orderResult?.orderId : orderResult?.orderId;
+  const displayOrderId = orderResult?.orderId || '—';
 
   return (
     <>
