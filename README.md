@@ -14,8 +14,15 @@ A full-stack web application featuring a React frontend with Tailwind CSS and a 
 |:---:|:---:|
 | ![Shop Catalog](screenshots/shop.png) | ![Cart Drawer](screenshots/cart.png) |
 
-### User Dashboard
-![Dashboard](screenshots/dashboard.png)
+### Checkout Flow
+| Express Checkout | Order Success |
+|:---:|:---:|
+| ![Express Checkout](screenshots/checkout.png) | ![Order Success](screenshots/success.png) |
+
+### User Dashboard & History
+| Dashboard Overview | Purchase History |
+|:---:|:---:|
+| ![Dashboard](screenshots/dashboard.png) | ![Purchase History](screenshots/history.png) |
 
 ## 🚀 Features
 
