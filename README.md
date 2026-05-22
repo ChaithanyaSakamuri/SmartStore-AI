@@ -391,39 +391,6 @@ A sleek, streamlined view designed for small-screen responsiveness and quick mic
 
 ---
 
-## 🎓 Viva & Project Defense Study Guide
-
-Tomorrow is your viva! Here is a breakdown of the key engineering decisions, system logic, and implementation details so you can answer any examiner questions with absolute confidence:
-
-### 1. The Dual-Role Synchronized Architecture
-* **Question: How does the dashboard update when a user places a new order?**
-* **Answer:** SmartStore AI implements real-time local state updates coupled with MongoDB query aggregation.
-  - When a customer checks out, a POST request is sent to `/api/products/checkout` which populates a unique `orderId` in the `Sales` collection for all checkout items.
-  - The **Admin Dashboard** listens for transaction changes via dynamic API polling and displays active inventory counts, aggregate total sales, and pending status records in real-time.
-  - There is a strict segregation of roles: a customer gets the catalog and AI chat storefront, whereas an admin accesses the Recharts analytical dashboards, order state flow management (Pending ➔ Completed ➔ Cancelled), and AI inventory insights.
-
-### 2. The Case-Insensitive Auth Security Protocol
-* **Question: What happens if a user signs up with `User@Example.com` and tries to log in with `user@example.com`?**
-* **Answer:** We implemented **self-sanitizing authentication**.
-  - During signup and login, email addresses are automatically sanitized using standard lowercase trim-casting (`email.toLowerCase().trim()`).
-  - This prevents duplicate account registrations under variations of casing and eliminates authentication mismatch bugs.
-  - Password hashing is enforced via high-entropy `bcryptjs` with a salt factor of 10, combined with JSON Web Token (JWT) stateless authorization header validation.
-
-### 3. Google Gemini AI Conversational Assistant
-* **Question: How does the AI chatbot know about your product inventory without hardcoded rules?**
-* **Answer:** We implemented **Dynamic Retrieval-Augmented Context Ingestion**.
-  - When a user or admin communicates with the chatbot, our backend controller (`/api/ai/chat`) fetches the latest product catalog live from the MongoDB database.
-  - This catalog is serialized as structured JSON and prepended as system instruction context to the Gemini API prompt.
-  - As a result, the chatbot has perfect, real-time awareness of product descriptions, stock levels, pricing, and category divisions without requiring offline embeddings or manual model fine-tuning.
-
-### 4. Database Timeout & Self-Healing Local Failover
-* **Question: How does the application handle sudden database timeouts or Atlas cluster disconnections?**
-* **Answer:** SmartStore AI utilizes a **dual-failover mongoose configuration**.
-  - All mongoose models utilize a configured connection timeout policy (e.g. 5000ms delay) to prevent blocking the Node/Express event loop in the event of an Atlas outage.
-  - The checkout controller implements a **Self-Healing Cart Protocol**. If a checkout network error occurs, the user's cart state is serialized locally in the React `CartContext` and preserved, allowing the customer to re-submit the transaction instantly when connectivity returns without losing their loaded cart list.
-
----
-
 ## 📄 License
 
 MIT

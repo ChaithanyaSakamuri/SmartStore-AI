@@ -12,7 +12,10 @@ import {
   FileText, 
   CheckCircle2, 
   ShoppingBag,
-  Sparkles
+  Sparkles,
+  Package,
+  Copy,
+  PartyPopper
 } from 'lucide-react';
 
 const ProductImage = ({ src, alt, category }) => {
@@ -71,6 +74,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
   const [paypalEmail, setPaypalEmail] = useState('');
   const [upiId, setUpiId] = useState('');
   const [paypalOption, setPaypalOption] = useState('PayPal Wallet'); // 'PayPal Wallet', 'Credit/Debit Card', 'UPI / Smart Pay'
+  const [finalPaymentMethod, setFinalPaymentMethod] = useState('Credit Card');
 
   useEffect(() => {
     if (isOpen) {
@@ -90,6 +94,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
       setPaypalEmail('');
       setUpiId('');
       setPaypalOption('PayPal Wallet');
+      setFinalPaymentMethod('Credit Card');
     }
   }, [isOpen]);
 
@@ -212,7 +217,8 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
     setError('');
     setIsLoading(true);
 
-    const finalPaymentMethod = paymentMethod === 'PayPal' ? `PayPal (${paypalOption})` : paymentMethod;
+    const computedPaymentMethod = paymentMethod === 'PayPal' ? `PayPal (${paypalOption})` : paymentMethod;
+    setFinalPaymentMethod(computedPaymentMethod);
 
     try {
       if (isCartCheckout) {
@@ -225,14 +231,13 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
           phone,
           address,
           notes,
-          paymentMethod: finalPaymentMethod,
+          paymentMethod: computedPaymentMethod,
         });
 
         setOrderResult(response.data);
         setPurchasedItems([...cartItems]);
-        setPurchaseSuccess(true);
         clearCart();
-        alert('Order Successful!');
+        setPurchaseSuccess(true);
         
         if (onPurchaseSuccess) {
           onPurchaseSuccess(response.data.products);
@@ -244,13 +249,12 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
           phone,
           address,
           notes,
-          paymentMethod: finalPaymentMethod,
+          paymentMethod: computedPaymentMethod,
         });
 
         setOrderResult(response.data.sale);
         setPurchasedItems([{ product, quantity }]);
         setPurchaseSuccess(true);
-        alert('Order Successful!');
         
         if (onPurchaseSuccess) {
           onPurchaseSuccess([response.data.product]);
@@ -282,7 +286,186 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
   const discountAmount = isCartCheckout ? cartDiscountTotal : subtotal * ((product.discount || 0) / 100);
   const finalTotal = isCartCheckout ? cartFinalTotal : subtotal - discountAmount;
 
+  const [copiedOrderId, setCopiedOrderId] = useState(false);
+
+  const handleCopyOrderId = (orderId) => {
+    navigator.clipboard.writeText(orderId).then(() => {
+      setCopiedOrderId(true);
+      setTimeout(() => setCopiedOrderId(false), 2000);
+    });
+  };
+
+  const displayOrderId = isCartCheckout ? orderResult?.orderId : orderResult?.orderId;
+
   return (
+    <>
+      {/* ====== ORDER SUCCESS OVERLAY POPUP ====== */}
+      <AnimatePresence>
+        {purchaseSuccess && (
+          <framerMotion.div
+            key="success-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            style={{ background: 'radial-gradient(ellipse at center, rgba(16,185,129,0.15) 0%, rgba(0,0,0,0.85) 70%)' }}
+          >
+            {/* Animated particles */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(20)].map((_, i) => (
+                <framerMotion.div
+                  key={i}
+                  className="absolute rounded-full"
+                  style={{
+                    width: Math.random() * 10 + 4,
+                    height: Math.random() * 10 + 4,
+                    left: `${Math.random() * 100}%`,
+                    background: ['#10b981','#6366f1','#f59e0b','#3b82f6','#ec4899'][i % 5],
+                    opacity: 0.7,
+                  }}
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{
+                    y: ['0%', `${Math.random() * 60 + 20}vh`],
+                    x: [`0px`, `${(Math.random() - 0.5) * 200}px`],
+                    opacity: [0, 1, 0],
+                    rotate: [0, Math.random() * 360],
+                  }}
+                  transition={{ duration: Math.random() * 2 + 1.5, delay: Math.random() * 0.8, ease: 'easeOut' }}
+                />
+              ))}
+            </div>
+
+            {/* Success Card */}
+            <framerMotion.div
+              initial={{ scale: 0.5, opacity: 0, y: 60 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: -40 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+              className="relative w-full max-w-md bg-slate-900/95 border border-green-500/30 rounded-3xl shadow-2xl shadow-green-500/10 overflow-hidden"
+            >
+              {/* Green glow top bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+
+              <div className="p-8 flex flex-col items-center text-center">
+                {/* Animated check icon */}
+                <framerMotion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.15 }}
+                  className="relative mb-5"
+                >
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-400/20 to-green-600/20 border-2 border-green-500/40 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="w-12 h-12 text-green-400" />
+                  </div>
+                  <framerMotion.div
+                    className="absolute -top-1 -right-1 w-7 h-7 bg-amber-400 rounded-full flex items-center justify-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5, type: 'spring' }}
+                  >
+                    <PartyPopper className="w-4 h-4 text-amber-900" />
+                  </framerMotion.div>
+                </framerMotion.div>
+
+                {/* Title */}
+                <framerMotion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="text-2xl font-extrabold text-white mb-1"
+                >
+                  Order Successful! 🎉
+                </framerMotion.h2>
+                <framerMotion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.35 }}
+                  className="text-gray-400 text-sm mb-6"
+                >
+                  Your payment was processed. We'll get it to you soon!
+                </framerMotion.p>
+
+                {/* Order ID Card */}
+                <framerMotion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="w-full bg-slate-950/70 border border-white/10 rounded-2xl p-4 mb-5 space-y-3"
+                >
+                  {/* Order ID Row */}
+                  <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-green-400 flex-shrink-0" />
+                      <div className="text-left">
+                        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Order ID</div>
+                        <div className="text-sm font-mono font-bold text-green-300">{displayOrderId || '—'}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCopyOrderId(displayOrderId)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+                      title="Copy Order ID"
+                    >
+                      {copiedOrderId
+                        ? <CheckCircle2 className="w-4 h-4 text-green-400" />
+                        : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Items & Payment summary */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white/5 rounded-xl p-2.5 text-left">
+                      <div className="text-gray-500 mb-0.5">Items</div>
+                      <div className="text-white font-semibold truncate">
+                        {purchasedItems.length === 1
+                          ? `${purchasedItems[0]?.product?.name} (x${purchasedItems[0]?.quantity})`
+                          : `${purchasedItems.length} products`}
+                      </div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-2.5 text-left">
+                      <div className="text-gray-500 mb-0.5">Payment</div>
+                      <div className="text-white font-semibold truncate">{finalPaymentMethod || paymentMethod}</div>
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                    <span className="text-gray-400 text-sm">Total Paid</span>
+                    <span className="text-green-400 font-extrabold text-xl">
+                      ${finalTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </framerMotion.div>
+
+                {/* Status badge */}
+                <framerMotion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.55 }}
+                  className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1 mb-6"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-amber-300 text-xs font-semibold">Order Pending — Admin will update status</span>
+                </framerMotion.div>
+
+                {/* CTA Button */}
+                <framerMotion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  onClick={onClose}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-3 px-6 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20"
+                >
+                  Continue Shopping
+                </framerMotion.button>
+              </div>
+            </framerMotion.div>
+          </framerMotion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ====== CHECKOUT MODAL ====== */}
+      {!purchaseSuccess && (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop */}
       <framerMotion.div
@@ -305,7 +488,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         <div className="flex items-center justify-between p-4 py-3.5 border-b border-white/10 bg-slate-950/40">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-blue-400" /> 
-            {purchaseSuccess ? 'Order Confirmed!' : 'Express Checkout'}
+            Express Checkout
           </h3>
           <button 
             onClick={onClose}
@@ -315,64 +498,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
           </button>
         </div>
 
-        {purchaseSuccess ? (
-          /* Success Screen */
-          <framerMotion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-8 text-center flex flex-col items-center"
-          >
-            <framerMotion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', delay: 0.1 }}
-              className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-6 border border-green-500/30"
-            >
-              <CheckCircle2 className="w-10 h-10" />
-            </framerMotion.div>
-
-            <h4 className="text-2xl font-bold text-white mb-2">Thank you for your order!</h4>
-            <p className="text-gray-400 text-sm max-w-md mb-6">
-              Your transaction was processed successfully. A confirmation receipt has been sent to your account.
-            </p>
-
-            <div className="w-full bg-slate-950/60 border border-white/10 rounded-xl p-5 mb-8 text-left space-y-3 font-medium">
-              <div className="flex justify-between text-sm border-b border-white/5 pb-2.5">
-                <span className="text-gray-500">Order Reference</span>
-                <span className="font-mono text-gray-300 font-bold">
-                  {isCartCheckout ? orderResult?.orderId : orderResult?.orderId}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm border-b border-white/5 pb-2.5">
-                <span className="text-gray-500">Items purchased</span>
-                <div className="text-right text-gray-300 max-w-[280px] max-h-[120px] overflow-y-auto pr-1 space-y-1">
-                  {purchasedItems.map((item) => (
-                    <div key={item.product._id} className="text-xs font-semibold">
-                      {item.product.name} (x{item.quantity})
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-between text-sm border-b border-white/5 pb-2.5">
-                <span className="text-gray-500">Payment method</span>
-                <span className="text-gray-300">{paymentMethod}</span>
-              </div>
-              <div className="pt-2 flex justify-between text-base">
-                <span className="text-white font-semibold">Total paid</span>
-                <span className="text-green-400 font-extrabold text-lg">
-                  ${finalTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="w-full max-w-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/20"
-            >
-              Continue Shopping
-            </button>
-          </framerMotion.div>
-        ) : (
+        {(
           /* Checkout Form */
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {error && (
@@ -809,6 +935,8 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         )}
       </framerMotion.div>
     </div>
+      )}
+    </>
   );
 };
 
