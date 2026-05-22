@@ -67,6 +67,11 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
   const [cardCvv, setCardCvv] = useState('');
   const [cardName, setCardName] = useState('');
 
+  // PayPal & SmartPay (UPI) details states
+  const [paypalEmail, setPaypalEmail] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [paypalOption, setPaypalOption] = useState('PayPal Wallet'); // 'PayPal Wallet', 'Credit/Debit Card', 'UPI / Smart Pay'
+
   useEffect(() => {
     if (isOpen) {
       setQuantity(1);
@@ -82,6 +87,9 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
       setCardExpiry('');
       setCardCvv('');
       setCardName('');
+      setPaypalEmail('');
+      setUpiId('');
+      setPaypalOption('PayPal Wallet');
     }
   }, [isOpen]);
 
@@ -141,10 +149,70 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         setError('Invalid CVV (must be 3 digits)');
         return;
       }
+    } else if (paymentMethod === 'PayPal') {
+      if (paypalOption === 'PayPal Wallet') {
+        if (!paypalEmail.trim()) {
+          setError('PayPal Email/Mobile Number is required');
+          return;
+        }
+        if (paypalEmail.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paypalEmail)) {
+          setError('Please enter a valid PayPal Email Address');
+          return;
+        }
+      } else if (paypalOption === 'Credit/Debit Card') {
+        if (!cardName.trim()) {
+          setError('Cardholder name is required');
+          return;
+        }
+        if (!cardNumber.trim()) {
+          setError('Card number is required');
+          return;
+        }
+        if (cardNumber.replace(/\s/g, '').length < 16) {
+          setError('Invalid card number (must be 16 digits)');
+          return;
+        }
+        if (!cardExpiry.trim()) {
+          setError('Card expiry date is required');
+          return;
+        }
+        if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
+          setError('Invalid expiry format (use MM/YY)');
+          return;
+        }
+        if (!cardCvv.trim()) {
+          setError('CVV code is required');
+          return;
+        }
+        if (cardCvv.length < 3) {
+          setError('Invalid CVV (must be 3 digits)');
+          return;
+        }
+      } else if (paypalOption === 'UPI / Smart Pay') {
+        if (!upiId.trim()) {
+          setError('SmartPay UPI ID is required');
+          return;
+        }
+        if (!upiId.includes('@')) {
+          setError('Invalid UPI ID format (e.g. username@upi)');
+          return;
+        }
+      }
+    } else if (paymentMethod === 'SmartPay') {
+      if (!upiId.trim()) {
+        setError('SmartPay UPI ID is required');
+        return;
+      }
+      if (!upiId.includes('@')) {
+        setError('Invalid UPI ID format (e.g. username@upi)');
+        return;
+      }
     }
 
     setError('');
     setIsLoading(true);
+
+    const finalPaymentMethod = paymentMethod === 'PayPal' ? `PayPal (${paypalOption})` : paymentMethod;
 
     try {
       if (isCartCheckout) {
@@ -157,7 +225,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
           phone,
           address,
           notes,
-          paymentMethod,
+          paymentMethod: finalPaymentMethod,
         });
 
         setOrderResult(response.data);
@@ -176,7 +244,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
           phone,
           address,
           notes,
-          paymentMethod,
+          paymentMethod: finalPaymentMethod,
         });
 
         setOrderResult(response.data.sale);
@@ -549,6 +617,170 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                     />
                   </div>
                 </div>
+              </framerMotion.div>
+            )}
+
+            {/* PayPal Input Form */}
+            {paymentMethod === 'PayPal' && (
+              <framerMotion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-3 border-t border-white/10 pt-3 text-left"
+              >
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-gray-300 block">PayPal Checkout Method</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['PayPal Wallet', 'Credit/Debit Card', 'UPI / Smart Pay'].map((opt) => {
+                      const isOptSelected = paypalOption === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setPaypalOption(opt)}
+                          className={`flex items-center justify-center py-1.5 px-1 rounded-lg border text-[10px] font-semibold transition-all ${
+                            isOptSelected
+                              ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-sm shadow-blue-500/5'
+                              : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {paypalOption === 'PayPal Wallet' && (
+                  <framerMotion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-1 pt-1.5"
+                  >
+                    <label className="text-[11px] font-semibold text-gray-300">PayPal Email or Mobile Number</label>
+                    <input
+                      type="text"
+                      placeholder="paypal@example.com or +15551234567"
+                      value={paypalEmail}
+                      onChange={(e) => setPaypalEmail(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                      required
+                    />
+                    <p className="text-[10px] text-gray-500">You will be redirected securely to PayPal to authorize the transaction.</p>
+                  </framerMotion.div>
+                )}
+
+                {paypalOption === 'Credit/Debit Card' && (
+                  <framerMotion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-3 pt-1.5"
+                  >
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-gray-300">Cardholder Name</label>
+                      <input
+                        type="text"
+                        placeholder="John Doe"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-gray-300">Card Number</label>
+                      <input
+                        type="text"
+                        placeholder="1234 5678 1234 5678"
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                          setCardNumber(val.substring(0, 19));
+                        }}
+                        className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-gray-300">Expiry Date</label>
+                        <input
+                          type="text"
+                          placeholder="MM/YY"
+                          value={cardExpiry}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/\//g, '');
+                            if (val.length > 2) {
+                              val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                            }
+                            setCardExpiry(val.substring(0, 5));
+                          }}
+                          className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-gray-300">CVV</label>
+                        <input
+                          type="password"
+                          placeholder="123"
+                          value={cardCvv}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setCardCvv(val.substring(0, 3));
+                          }}
+                          className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </framerMotion.div>
+                )}
+
+                {paypalOption === 'UPI / Smart Pay' && (
+                  <framerMotion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-1 pt-1.5"
+                  >
+                    <label className="text-[11px] font-semibold text-gray-300">SmartPay UPI ID (via PayPal)</label>
+                    <input
+                      type="text"
+                      placeholder="username@upi"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                      required
+                    />
+                    <p className="text-[10px] text-gray-500">Accept the PayPal UPI payment request sent to your mobile wallet app.</p>
+                  </framerMotion.div>
+                )}
+              </framerMotion.div>
+            )}
+
+            {/* SmartPay (UPI) Input Form */}
+            {paymentMethod === 'SmartPay' && (
+              <framerMotion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-3 border-t border-white/10 pt-3 text-left"
+              >
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">SmartPay UPI ID</label>
+                  <input
+                    type="text"
+                    placeholder="username@upi"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                    required
+                  />
+                </div>
+                <p className="text-[10px] text-gray-500">Accept the UPI payment request sent to your mobile wallet app to complete checkout.</p>
               </framerMotion.div>
             )}
 
