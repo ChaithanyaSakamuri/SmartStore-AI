@@ -37,6 +37,9 @@ A full-stack web application featuring a React frontend with Tailwind CSS and a 
 |:---:|:---:|
 | ![Analytics](screenshots/admin_analytics.png) | ![AI Insights](screenshots/admin_insights.png) |
 
+#### Interactive AI Assistant
+![AI Chatbot Assistant](screenshots/admin_chatbot.png)
+
 ## 🚀 Features
 
 ### Frontend
