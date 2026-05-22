@@ -10,12 +10,18 @@ router.post('/signup', async (req, res) => {
   try {
     const { name, email, password, company } = req.body;
 
-    let user = await User.findOne({ email });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    let user = await User.findOne({ email: cleanEmail });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    user = new User({ name, email, password, company });
+    user = new User({ name, email: cleanEmail, password, company });
     await user.save();
 
     const token = jwt.sign(
@@ -39,7 +45,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }

@@ -48,7 +48,7 @@ const ProductImage = ({ src, alt, category }) => {
 };
 
 const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPurchaseSuccess }) => {
-  const { cartItems, clearCart, cartFinalTotal, cartTotal, cartDiscountTotal } = useContext(CartContext);
+  const { cartItems, clearCart, cartFinalTotal, cartTotal, cartDiscountTotal, removeFromCart } = useContext(CartContext);
 
   const [quantity, setQuantity] = useState(1);
   const [phone, setPhone] = useState('');
@@ -146,7 +146,22 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Transaction failed. Please try again.');
+      const errMsg = err.response?.data?.message || 'Transaction failed. Please try again.';
+      setError(errMsg);
+      
+      // Self-healing cart: Automatically remove invalid product IDs if they are missing from the catalog
+      if (errMsg.includes('not found') && errMsg.includes('Product with ID')) {
+        const match = errMsg.match(/Product with ID ([a-f0-9]+) not found/i);
+        if (match && match[1]) {
+          const invalidProductId = match[1];
+          removeFromCart(invalidProductId);
+          setError('Some items in your cart are no longer available in the catalog and have been removed. Please review your order and try checkout again.');
+        }
+      } else if (errMsg === 'Product not found') {
+        if (!isCartCheckout && product) {
+          setError('This product is no longer available in our store catalog.');
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -173,19 +188,19 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="relative z-10 w-full max-w-2xl bg-slate-900 border border-white/20 rounded-2xl shadow-2xl overflow-hidden my-8"
+        className="relative z-10 w-full max-w-xl bg-slate-900 border border-white/20 rounded-2xl shadow-2xl overflow-hidden my-4"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-slate-950/40">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-blue-400" /> 
+        <div className="flex items-center justify-between p-4 py-3.5 border-b border-white/10 bg-slate-950/40">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-blue-400" /> 
             {purchaseSuccess ? 'Order Confirmed!' : 'Express Checkout'}
           </h3>
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-white/5 rounded-full"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4.5 h-4.5" />
           </button>
         </div>
 
@@ -248,20 +263,20 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
           </framerMotion.div>
         ) : (
           /* Checkout Form */
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {error && (
-              <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded-lg text-sm">
+              <div className="bg-red-500/20 border border-red-500 text-red-200 p-2.5 rounded-lg text-xs">
                 {error}
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Product Brief / Cart Items list */}
-              <div className="space-y-5 bg-slate-950/30 border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+              <div className="space-y-3 bg-slate-950/30 border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Order Summary</h4>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Order Summary</h4>
                   {isCartCheckout ? (
-                    <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
                       {cartItems.map((item) => (
                         <div key={item.product._id} className="flex items-center gap-2.5 bg-white/5 border border-white/5 rounded-lg p-2">
                           <div className="w-10 h-10 flex-shrink-0">
@@ -280,15 +295,15 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="flex gap-3">
-                        <div className="w-14 h-14 flex-shrink-0">
+                    <div className="space-y-3">
+                      <div className="flex gap-2.5">
+                        <div className="w-12 h-12 flex-shrink-0">
                           <ProductImage src={product.image} alt={product.name} category={product.category} />
                         </div>
                         <div className="min-w-0">
                           <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">{product.category || 'Retail'}</span>
-                          <h4 className="text-sm font-bold text-white truncate leading-tight mt-0.5">{product.name}</h4>
-                          <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                          <h4 className="text-xs font-bold text-white truncate leading-tight mt-0.5">{product.name}</h4>
+                          <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">{product.description}</p>
                         </div>
                       </div>
 
@@ -354,10 +369,9 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                   </div>
                 </div>
               </div>
-
               {/* Delivery Details */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
+              <div className="space-y-3">
+                <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-blue-400" /> Phone Number
                   </label>
@@ -366,12 +380,12 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                     placeholder="+1 (555) 123-4567"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
                     required
                   />
                 </div>
-
-                <div className="space-y-1.5">
+ 
+                <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
                     <Truck className="w-3.5 h-3.5 text-blue-400" /> Shipping Address
                   </label>
@@ -379,12 +393,12 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                     placeholder="Enter full address details (street, suite, zip code)"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs min-h-[90px] resize-none"
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs min-h-[72px] resize-none"
                     required
                   />
                 </div>
-
-                <div className="space-y-1.5">
+ 
+                <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-blue-400" /> Delivery Notes (Optional)
                   </label>
@@ -392,16 +406,16 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                     placeholder="E.g., Leave package on the porch"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs h-[65px] resize-none"
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs min-h-[48px] h-[48px] resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Payment Method Selector */}
-            <div className="space-y-2 border-t border-white/10 pt-4">
+            <div className="space-y-1.5 border-t border-white/10 pt-3">
               <label className="text-xs font-semibold text-gray-300 block">Select Payment Method</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {['Credit Card', 'PayPal', 'SmartPay'].map((method) => {
                   const isSelected = paymentMethod === method;
                   return (
@@ -409,13 +423,13 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                       key={method}
                       type="button"
                       onClick={() => setPaymentMethod(method)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs font-semibold transition-all ${
+                      className={`flex flex-col items-center justify-center p-1.5 rounded-xl border text-[11px] font-semibold transition-all ${
                         isSelected
                           ? 'bg-blue-600/10 border-blue-500 text-blue-300 shadow-md shadow-blue-500/5'
                           : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      <CreditCard className={`w-4 h-4 mb-1 ${isSelected ? 'text-blue-400' : 'text-gray-500'}`} />
+                      <CreditCard className={`w-3.5 h-3.5 mb-0.5 ${isSelected ? 'text-blue-400' : 'text-gray-500'}`} />
                       {method}
                     </button>
                   );
@@ -424,18 +438,18 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 border-t border-white/10 pt-4 bg-slate-950/10 -mx-6 -mb-6 p-6">
+            <div className="flex gap-3.5 border-t border-white/10 pt-3 bg-slate-950/10 -mx-5 -mb-5 p-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="w-1/3 border border-white/15 hover:bg-white/5 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs"
+                className="w-1/3 border border-white/15 hover:bg-white/5 text-white font-bold py-2 px-3 rounded-xl transition-all text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading || (!isCartCheckout && product.stock <= 0)}
-                className="w-2/3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-2.5 px-4 rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group hover:scale-[1.02] active:scale-[0.98] text-xs"
+                className="w-2/3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-2 px-3 rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group hover:scale-[1.02] active:scale-[0.98] text-xs"
               >
                 {isLoading ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
