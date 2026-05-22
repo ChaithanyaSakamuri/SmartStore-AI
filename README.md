@@ -190,26 +190,131 @@ cd server
 npm start
 ```
 
-## 📊 Database Models
+## 🏗️ System Architecture
 
-### User
-- name, email, password, role, company
-- lastLogin, loginAttempts, timestamps
+The following diagram illustrates the high-fidelity, dual-role full-stack system architecture of SmartStore AI:
 
-### Product
-- name, description, price, stock
-- category, brand, rating, salesCount
-- aiGenerated fields, timestamps
+```mermaid
+graph TD
+    %% User Roles & Client App
+    subgraph Client [React Frontend / client]
+        Customer[🛒 Customer Session]
+        Admin[👤 Admin Dashboard]
+        Cart[🛍️ Shopping Cart / CartContext]
+        Chatbot[🧠 Gemini AI Chatbot / AIChatBot]
+    end
 
-### Sales
-- orderId, product, quantity, totalAmount
-- status, paymentMethod, customer info
-- timestamps
+    %% Web Services & Endpoints
+    subgraph Express [Express Server / server]
+        AuthRouter[/api/auth]
+        ProductRouter[/api/products]
+        DashboardRouter[/api/dashboard]
+        AIRouter[/api/ai]
+        AuthMiddleware[🔐 Auth Middleware]
+    end
 
-### AIInsight
-- type, title, description
-- metrics, recommendations
-- timestamps
+    %% Storage & AI Engines
+    subgraph Data [Data & AI Engine]
+        MongoDB[(🍃 Local MongoDB Failover)]
+        Atlas[(☁️ MongoDB Atlas Master)]
+        GeminiAPI[✨ Google Gemini AI API]
+    end
+
+    %% Connections - Customer Roles
+    Customer -->|Manages Cart| Cart
+    Cart -->|Quick Buy / Checkout| ProductRouter
+    Customer -->|Interacts| Chatbot
+    
+    %% Connections - Admin Roles
+    Admin -->|Fulfillment Status Update| DashboardRouter
+
+    %% Routers to Auth Middleware & Engines
+    AuthRouter --> AuthMiddleware
+    ProductRouter --> AuthMiddleware
+    DashboardRouter --> AuthMiddleware
+    AIRouter --> AuthMiddleware
+    
+    %% Storage Connectors
+    AuthMiddleware -->|Persists & Validates| MongoDB
+    AuthMiddleware -->|Primary Target| Atlas
+    AIRouter -->|Live Catalog Context & Prompts| GeminiAPI
+```
+
+---
+
+## 📊 Database Models & Schema Table
+
+SmartStore AI runs on a fully relational-modeled Document Schema design utilizing Mongoose ODM.
+
+### 1. User Model (`User.js`)
+Stores user profiles, roles, authentication credentials, and lock security records.
+
+| Field | Type | Validation / Defaults | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `String` | Required | Full user name. |
+| `email` | `String` | Unique, lowercase, trimmed | Case-insensitive user email. |
+| `password` | `String` | Required, Bcrypt-hashed | Hashed user password. |
+| `role` | `String` | Enum: `['admin', 'user']`, Default: `'user'` | Dynamic authorization role. |
+| `avatar` | `String` | Default: `null` | URL path to profile avatar. |
+| `phone` | `String` | Optional | User phone contact. |
+| `company` | `String` | Optional | User organization name. |
+| `preferences` | `Object` | Theme (default `'dark'`), Notifications (default `true`) | User custom settings. |
+| `lastLogin` | `Date` | Timestamp | Recorded last sign-in. |
+| `loginAttempts`| `Number` | Default: `0` | Consecutive failed logins. |
+| `lockUntil` | `Date` | Timestamp | Lockout end time after failures. |
+
+### 2. Product Model (`Product.js`)
+Stores retail catalog items, inventory levels, dynamic tagging, and AI-predicted pricing metrics.
+
+| Field | Type | Validation / Defaults | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `String` | Required, Indexed | Product title. |
+| `description` | `String` | Indexed | Detailed product description. |
+| `price` | `Number` | Required | Live retail unit price. |
+| `originalPrice`| `Number` | Optional | Original price before markdowns. |
+| `discount` | `Number` | Default: `0` | Active promo markdown (%). |
+| `category` | `String` | Optional | Product category grouping. |
+| `brand` | `String` | Optional | Manufacturing brand. |
+| `image` | `String` | Optional | Primary Unsplash thumbnail link. |
+| `images` | `[String]` | Array of links | Multi-angle product imagery gallery. |
+| `stock` | `Number` | Default: `0` | Live inventory stock remaining. |
+| `sku` | `String` | Optional | Unique SKU bar code. |
+| `rating` | `Number` | Default: `0` | Aggregate user ratings stars. |
+| `reviewCount` | `Number` | Default: `0` | Cumulative total reviews count. |
+| `salesCount` | `Number` | Default: `0` | Total units ordered in system. |
+| `revenue` | `Number` | Default: `0` | Cumulative total revenue generated. |
+| `aiGenerated` | `Object` | Suggested price, tags, captions | Gemini-suggested pricing & marketing copy. |
+
+### 3. Sales Model (`Sales.js`)
+Tracks financial transactions, order groupings, payment processing, and shipment statuses.
+
+| Field | Type | Validation / Defaults | Description |
+| :--- | :--- | :--- | :--- |
+| `orderId` | `String` | Required, Indexed | Consolidated transaction ID. |
+| `product` | `ObjectId` | Ref: `'Product'` | Referenced product model. |
+| `productName` | `String` | Optional | Snapshot of item title at sale. |
+| `quantity` | `Number` | Required | Total units ordered. |
+| `unitPrice` | `Number` | Required | Snapshot price at transaction time. |
+| `totalAmount` | `Number` | Computed value | Snapshot cost pre-discount (`qty * price`). |
+| `discount` | `Number` | Default: `0` | Markdown snapshot at purchase (%). |
+| `finalAmount` | `Number` | Computed value | Final customer charge after discounts. |
+| `status` | `String` | Enum: `['pending', 'completed', 'cancelled']`, Default: `'pending'` | Active shipment status. |
+| `paymentMethod`| `String` | Credit Card, PayPal, or SmartPay | Dynamic checkout payment choice. |
+| `customerEmail`| `String` | Trimmed, lowercase | Customer email reference. |
+| `customerPhone`| `String` | Required | Contact shipping phone. |
+| `shippingAddress`| `String` | Required | Customer delivery destination. |
+| `notes` | `String` | Optional | Customer delivery instructions. |
+
+### 4. AIInsight Model (`AIInsight.js`)
+Caches predictive business analytics insights generated by Gemini AI.
+
+| Field | Type | Validation / Defaults | Description |
+| :--- | :--- | :--- | :--- |
+| `type` | `String` | Required | Insight category (financial, stock, etc.). |
+| `title` | `String` | Required | Dynamic insight header. |
+| `description`| `String` | Required | Detailed predictive insight text. |
+| `metrics` | `Object` | Optional | Linked data numbers. |
+| `recommendations`| `[String]`| Dynamic array | List of AI-recommended actions. |
 
 ## 🔐 Security Features
 
