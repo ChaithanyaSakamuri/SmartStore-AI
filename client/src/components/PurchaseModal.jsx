@@ -324,10 +324,10 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                     background: ['#10b981','#6366f1','#f59e0b','#3b82f6','#ec4899'][i % 5],
                     opacity: 0.7,
                   }}
-                  initial={{ y: -20, opacity: 0 }}
+                  initial={{ y: 0, x: 0, opacity: 0 }}
                   animate={{
-                    y: ['0%', `${Math.random() * 60 + 20}vh`],
-                    x: [`0px`, `${(Math.random() - 0.5) * 200}px`],
+                    y: [0, Math.random() * 600 + 200],
+                    x: [0, (Math.random() - 0.5) * 400],
                     opacity: [0, 1, 0],
                     rotate: [0, Math.random() * 360],
                   }}
