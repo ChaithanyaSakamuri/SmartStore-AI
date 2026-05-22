@@ -61,6 +61,12 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
   const [error, setError] = useState('');
   const [purchasedItems, setPurchasedItems] = useState([]);
 
+  // Credit Card details states
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       setQuantity(1);
@@ -72,6 +78,10 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
       setOrderResult(null);
       setError('');
       setPurchasedItems([]);
+      setCardNumber('');
+      setCardExpiry('');
+      setCardCvv('');
+      setCardName('');
     }
   }, [isOpen]);
 
@@ -102,6 +112,37 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
       return;
     }
 
+    if (paymentMethod === 'Credit Card') {
+      if (!cardName.trim()) {
+        setError('Cardholder name is required');
+        return;
+      }
+      if (!cardNumber.trim()) {
+        setError('Card number is required');
+        return;
+      }
+      if (cardNumber.replace(/\s/g, '').length < 16) {
+        setError('Invalid card number (must be 16 digits)');
+        return;
+      }
+      if (!cardExpiry.trim()) {
+        setError('Card expiry date is required');
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
+        setError('Invalid expiry format (use MM/YY)');
+        return;
+      }
+      if (!cardCvv.trim()) {
+        setError('CVV code is required');
+        return;
+      }
+      if (cardCvv.length < 3) {
+        setError('Invalid CVV (must be 3 digits)');
+        return;
+      }
+    }
+
     setError('');
     setIsLoading(true);
 
@@ -123,6 +164,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         setPurchasedItems([...cartItems]);
         setPurchaseSuccess(true);
         clearCart();
+        alert('Order Successful!');
         
         if (onPurchaseSuccess) {
           onPurchaseSuccess(response.data.products);
@@ -140,6 +182,7 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
         setOrderResult(response.data.sale);
         setPurchasedItems([{ product, quantity }]);
         setPurchaseSuccess(true);
+        alert('Order Successful!');
         
         if (onPurchaseSuccess) {
           onPurchaseSuccess([response.data.product]);
@@ -436,6 +479,78 @@ const PurchaseModal = ({ isOpen, onClose, product, isCartCheckout = false, onPur
                 })}
               </div>
             </div>
+
+            {/* Credit Card Input Form */}
+            {paymentMethod === 'Credit Card' && (
+              <framerMotion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-3 border-t border-white/10 pt-3 text-left"
+              >
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">Cardholder Name</label>
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">Card Number</label>
+                  <input
+                    type="text"
+                    placeholder="1234 5678 1234 5678"
+                    value={cardNumber}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                      setCardNumber(val.substring(0, 19));
+                    }}
+                    className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-gray-300">Expiry Date</label>
+                    <input
+                      type="text"
+                      placeholder="MM/YY"
+                      value={cardExpiry}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\//g, '');
+                        if (val.length > 2) {
+                          val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                        }
+                        setCardExpiry(val.substring(0, 5));
+                      }}
+                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-gray-300">CVV</label>
+                    <input
+                      type="password"
+                      placeholder="123"
+                      value={cardCvv}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setCardCvv(val.substring(0, 3));
+                      }}
+                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:outline-none transition-colors text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+              </framerMotion.div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3.5 border-t border-white/10 pt-3 bg-slate-950/10 -mx-5 -mb-5 p-4">

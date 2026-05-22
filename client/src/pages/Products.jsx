@@ -403,7 +403,7 @@ const Products = () => {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', delay: 0.5 }}
           onClick={() => setCartDrawerOpen(true)}
-          className="fixed bottom-6 right-6 z-30 p-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center group border border-white/10"
+          className="fixed bottom-6 right-24 z-30 p-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center group border border-white/10"
         >
           <ShoppingBag className="w-6 h-6 group-hover:animate-bounce" />
           {cartCount > 0 && (
