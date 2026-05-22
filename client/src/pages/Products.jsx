@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
 import ProductModal from '../components/ProductModal';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import PurchaseModal, { ProductImage } from '../components/PurchaseModal';
 import CartDrawer from '../components/CartDrawer';
 import api from '../services/api';
@@ -432,17 +433,19 @@ const Products = () => {
       {/* Customer Shop Purchase Modal */}
       <AnimatePresence>
         {purchaseModalOpen && (
-          <PurchaseModal
-            isOpen={purchaseModalOpen}
-            onClose={() => {
-              setPurchaseModalOpen(false);
-              setBuyingProduct(null);
-              setIsCartCheckout(false);
-            }}
-            product={buyingProduct}
-            isCartCheckout={isCartCheckout}
-            onPurchaseSuccess={handlePurchaseSuccess}
-          />
+          <ErrorBoundary>
+            <PurchaseModal
+              isOpen={purchaseModalOpen}
+              onClose={() => {
+                setPurchaseModalOpen(false);
+                setBuyingProduct(null);
+                setIsCartCheckout(false);
+              }}
+              product={buyingProduct}
+              isCartCheckout={isCartCheckout}
+              onPurchaseSuccess={handlePurchaseSuccess}
+            />
+          </ErrorBoundary>
         )}
       </AnimatePresence>
     </DashboardLayout>
