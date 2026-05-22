@@ -24,6 +24,19 @@ A full-stack web application featuring a React frontend with Tailwind CSS and a 
 |:---:|:---:|
 | ![Dashboard](screenshots/dashboard.png) | ![Purchase History](screenshots/history.png) |
 
+### Admin Interface
+| Admin Dashboard | Products Management |
+|:---:|:---:|
+| ![Admin Dashboard](screenshots/admin_dashboard.png) | ![Products Directory](screenshots/admin_products.png) |
+
+| Add Product Modal | Orders Management |
+|:---:|:---:|
+| ![Add Product](screenshots/admin_add_product.png) | ![Orders Management](screenshots/admin_orders.png) |
+
+| Analytics Hub | AI Insights |
+|:---:|:---:|
+| ![Analytics](screenshots/admin_analytics.png) | ![AI Insights](screenshots/admin_insights.png) |
+
 ## 🚀 Features
 
 ### Frontend
